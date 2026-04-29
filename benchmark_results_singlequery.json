@@ -1,0 +1,68 @@
+{
+  "benchmark_date": "2026-04-27T02:44:15.167433+00:00",
+  "warehouse": "GEN2_XLARGE",
+  "mode": "SINGLE-QUERY (no partition loop)",
+  "collaboration": "telco_audience_overlap_bench",
+  "provider_offering": "telco_c360_offering_bench_v1_0",
+  "consumer_offering": "consumer_marketing_audience_bench_v1_0",
+  "total_provider_rows": "1,200,000,000",
+  "total_consumer_rows": "8,000,000",
+  "analysis_single_query_seconds": 56.95,
+  "activation_single_query_seconds": 79.413,
+  "steps": [
+    {
+      "step": "S0: USE WAREHOUSE GEN2_XLARGE",
+      "wall_seconds": 0.439,
+      "server_ms": 47,
+      "query_id": "01c3fae1-0001-6b92-0000-31d5060645ba",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:41:51.487606+00:00"
+    },
+    {
+      "step": "S0: ALTER WAREHOUSE RESUME",
+      "wall_seconds": 0.421,
+      "server_ms": 43,
+      "query_id": "01c3fae1-0001-6b73-0000-31d506067422",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:41:52.814502+00:00"
+    },
+    {
+      "step": "S0: warmup SELECT 1",
+      "wall_seconds": 0.416,
+      "server_ms": 18,
+      "query_id": "01c3fae1-0001-6b92-0000-31d5060645c2",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:41:53.991010+00:00"
+    },
+    {
+      "step": "SINGLE-QUERY ANALYSIS (full 1.2B x 8M join, one RUN call)",
+      "wall_seconds": 56.95,
+      "server_ms": 56521,
+      "query_id": "01c3fae1-0001-6b73-0000-31d506067432",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-27T02:42:51.971906+00:00"
+    },
+    {
+      "step": "SINGLE-QUERY ACTIVATION (full 1.2B x 8M \u2192 ~5.6M export, one RUN call)",
+      "wall_seconds": 79.413,
+      "server_ms": 79001,
+      "query_id": "01c3fae2-0001-6b73-0000-31d50606755a",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:44:13.149226+00:00"
+    },
+    {
+      "step": "COUNT activation batch from segment name highvalue_singlequery_allpartitions",
+      "wall_seconds": 0.744,
+      "server_ms": 365,
+      "query_id": "01c3fae4-0001-6b73-0000-31d5060676d6",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:44:15.167231+00:00"
+    }
+  ]
+}

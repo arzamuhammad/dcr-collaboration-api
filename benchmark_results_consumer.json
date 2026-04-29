@@ -1,0 +1,207 @@
+{
+  "benchmark_date": "2026-04-26T11:47:44.049606+00:00",
+  "side": "CONSUMER",
+  "warehouse": "GEN2_XLARGE",
+  "warehouse_size": "X-LARGE",
+  "provider_account": "SFSEAPAC.ARDIYANMUHAMMAD",
+  "consumer_account": "SFSEAPAC.ALVIN_JKT",
+  "collaboration_name": "telco_audience_overlap_bench",
+  "provider_offering": "telco_c360_offering_bench_v1_0",
+  "consumer_offering": "consumer_marketing_audience_bench_v1_0",
+  "total_wall_seconds": 351.718,
+  "steps": [
+    {
+      "step": "STEP C0a: USE WAREHOUSE GEN2_XLARGE",
+      "wall_seconds": 0.422,
+      "server_ms": 30,
+      "query_id": "01c3f75d-0001-6b54-0000-31d5060522b6",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:36.583476+00:00"
+    },
+    {
+      "step": "STEP C0b: ALTER WAREHOUSE RESUME",
+      "wall_seconds": 0.446,
+      "server_ms": 66,
+      "query_id": "01c3f75d-0001-6b73-0000-31d50605141e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:37.929694+00:00"
+    },
+    {
+      "step": "STEP C0c: warmup SELECT 1",
+      "wall_seconds": 0.961,
+      "server_ms": 33,
+      "query_id": "01c3f75d-0001-6b54-0000-31d5060522be",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:39.754112+00:00"
+    },
+    {
+      "step": "STEP C1a: GRANT ROLE SAMOOHA_APP_ROLE",
+      "wall_seconds": 0.467,
+      "server_ms": 29,
+      "query_id": "01c3f75d-0001-6b54-0000-31d5060522c2",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:41.028254+00:00"
+    },
+    {
+      "step": "STEP C1b: GRANT USAGE ON DATABASE",
+      "wall_seconds": 0.426,
+      "server_ms": 37,
+      "query_id": "01c3f75d-0001-6b73-0000-31d50605142e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:42.296720+00:00"
+    },
+    {
+      "step": "STEP C1c: GRANT USAGE ON SCHEMA",
+      "wall_seconds": 0.427,
+      "server_ms": 30,
+      "query_id": "01c3f75d-0001-6b54-0000-31d5060522ca",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:43.341811+00:00"
+    },
+    {
+      "step": "STEP C1d: GRANT SELECT ON TABLE",
+      "wall_seconds": 0.571,
+      "server_ms": 158,
+      "query_id": "01c3f75d-0001-6b73-0000-31d506051436",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:44.557107+00:00"
+    },
+    {
+      "step": "STEP C2: REGISTER_STANDARD_DCR_TEMPLATES",
+      "wall_seconds": 8.871,
+      "server_ms": 8481,
+      "query_id": "01c3f75d-0001-6b73-0000-31d50605143e",
+      "rowcount": 2,
+      "error": null,
+      "timestamp": "2026-04-26T11:41:54.335214+00:00"
+    },
+    {
+      "step": "STEP C3: VIEW_COLLABORATIONS",
+      "wall_seconds": 6.708,
+      "server_ms": 6259,
+      "query_id": "01c3f75d-0001-6b54-0000-31d5060522de",
+      "rowcount": 2,
+      "error": null,
+      "timestamp": "2026-04-26T11:42:01.695670+00:00"
+    },
+    {
+      "step": "STEP C4: REVIEW invitation",
+      "wall_seconds": 164.09,
+      "server_ms": 163637,
+      "query_id": "01c3f75e-0001-6b54-0000-31d506052336",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:44:46.460397+00:00"
+    },
+    {
+      "step": "STEP C5: JOIN (sync part returns quickly)",
+      "wall_seconds": 30.714,
+      "server_ms": 29230,
+      "query_id": "01c3f760-0001-6b54-0000-31d506052d6a",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:45:18.153134+00:00"
+    },
+    {
+      "step": "STEP C5b: poll GET_STATUS until CONSUMER=JOINED",
+      "wall_seconds": 22.202,
+      "server_ms": null,
+      "query_id": null,
+      "rowcount": null,
+      "error": null,
+      "final_statuses": {
+        "SFSEAPAC.ALVIN_JKT": "JOINED",
+        "SFSEAPAC.ARDIYANMUHAMMAD": "JOINED"
+      },
+      "timestamp": "2026-04-26T11:45:40.355251+00:00"
+    },
+    {
+      "step": "STEP C6: REGISTER_DATA_OFFERING (consumer local, 7 cols)",
+      "wall_seconds": 5.697,
+      "server_ms": 5313,
+      "query_id": "01c3f761-0001-6b54-0000-31d506052f22",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:45:47.195696+00:00"
+    },
+    {
+      "step": "STEP C7: LINK_LOCAL_DATA_OFFERING",
+      "wall_seconds": 6.142,
+      "server_ms": 5689,
+      "query_id": "01c3f761-0001-6b7a-0000-31d5060540ae",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:45:54.171577+00:00"
+    },
+    {
+      "step": "STEP C8a: VIEW_DATA_OFFERINGS",
+      "wall_seconds": 5.262,
+      "server_ms": 4863,
+      "query_id": "01c3f761-0001-6b7a-0000-31d506054112",
+      "rowcount": 2,
+      "error": null,
+      "timestamp": "2026-04-26T11:46:00.151520+00:00"
+    },
+    {
+      "step": "STEP C8b: VIEW_TEMPLATES",
+      "wall_seconds": 5.762,
+      "server_ms": 5015,
+      "query_id": "01c3f762-0001-6b73-0000-31d50605151a",
+      "rowcount": 2,
+      "error": null,
+      "timestamp": "2026-04-26T11:46:06.610071+00:00"
+    },
+    {
+      "step": "STEP C9: RUN standard_audience_overlap_v0 (joins 150M p1 \u00d7 1M c1 w/ partition filter)",
+      "wall_seconds": 29.936,
+      "server_ms": 29518,
+      "query_id": "01c3f762-0001-6b54-0000-31d506052f8e",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T11:46:37.388765+00:00"
+    },
+    {
+      "step": "STEP C10: RUN standard_audience_overlap_activation_v0 (export ~700k matched)",
+      "wall_seconds": 60.49,
+      "server_ms": 60103,
+      "query_id": "01c3f762-0001-6b7a-0000-31d506054162",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:47:38.881874+00:00"
+    },
+    {
+      "step": "STEP C11a: COUNT activation results",
+      "wall_seconds": 0.464,
+      "server_ms": 85,
+      "query_id": "01c3f763-0001-6b54-0000-31d5060550c6",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:47:40.406279+00:00"
+    },
+    {
+      "step": "STEP C12: CREATE TABLE AS SELECT (materialize 700k flat rows)",
+      "wall_seconds": 1.181,
+      "server_ms": 799,
+      "query_id": "01c3f763-0001-6b7a-0000-31d5060542be",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:47:42.613718+00:00"
+    },
+    {
+      "step": "STEP C13: SELECT COUNT from materialized table",
+      "wall_seconds": 0.479,
+      "server_ms": 94,
+      "query_id": "01c3f763-0001-6b73-0000-31d50605157e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T11:47:44.049455+00:00"
+    }
+  ]
+}

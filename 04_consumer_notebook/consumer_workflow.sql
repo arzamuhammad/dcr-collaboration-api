@@ -128,7 +128,7 @@ CALL SAMOOHA_BY_SNOWFLAKE_LOCAL_DB.COLLABORATION.VIEW_DATA_OFFERINGS('telco_audi
 CALL SAMOOHA_BY_SNOWFLAKE_LOCAL_DB.COLLABORATION.VIEW_TEMPLATES('telco_audience_overlap');
 
 -- =========================================================================
--- STEP 8  ·  RUN ANALYSIS -> hitung overlap per partisi
+-- STEP 8  ·  RUN ANALYSIS -> hitung overlap SELURUH DATA (full-scan, 1 query)
 -- -------------------------------------------------------------------------
 -- PENTING - syntax rules yang perlu diperhatikan:
 --   1. view_mappings.source_tables = ARRAY of strings (plural)
@@ -136,10 +136,16 @@ CALL SAMOOHA_BY_SNOWFLAKE_LOCAL_DB.COLLABORATION.VIEW_TEMPLATES('telco_audience_
 --   2. join_clauses PAKAI column_type ALIAS yang di-expose di shared view:
 --      HASHED_PHONE_SHA256  (BUKAN HASHED_MSISDN nama asli)
 --   3. DATE_PARTITION tidak bisa di join_clauses (karena passthrough).
---      Gunakan my_where_clause + source_where_clause untuk scope partisi.
+--      Kalau mau scope ke 1 partisi, pakai my_where_clause + source_where_clause.
 --   4. count_column juga pakai column_type alias, TANPA p1./c1. prefix.
 --
--- Hasil uji:
+-- MODE FULL-SCAN (recommended untuk production):
+--   - my_where_clause & source_where_clause DIKOSONGKAN
+--   - Satu RUN call memproses seluruh 1.2B provider × 8M consumer rows
+--   - Benchmark: 57 detik di GEN2_XLARGE (vs 209 detik loop per-partisi)
+--   - Output: k-anonymized overlap count across ALL partitions
+--
+-- Hasil uji single-partition (20260420) sebelumnya:
 --   WATERFALL_LEVEL | METRIC_TYPE | COUNT_VALUE | TOTAL_COUNT
 --   1               | OVERLAP     | 700,000     | 1,000,000
 --   1               | NON_OVERLAP | 300,000     | 1,000,000
@@ -147,8 +153,8 @@ CALL SAMOOHA_BY_SNOWFLAKE_LOCAL_DB.COLLABORATION.VIEW_TEMPLATES('telco_audience_
 CALL SAMOOHA_BY_SNOWFLAKE_LOCAL_DB.COLLABORATION.RUN('telco_audience_overlap', $$
 api_version: "2.0.0"
 spec_type: "analysis"
-name: "overlap_count"
-description: Hitung audiens consumer yang match dengan C360 provider pada partisi terbaru
+name: "overlap_count_fullscan"
+description: Hitung overlap untuk SELURUH data (semua partisi) dalam satu query
 template: "standard_audience_overlap_v0"
 
 template_configuration:
@@ -164,26 +170,91 @@ template_configuration:
       - "p1.HASHED_PHONE_SHA256 = c1.HASHED_PHONE_SHA256"
     count_column:
       - "HASHED_PHONE_SHA256"
-    my_where_clause:     "c1.DATE_PARTITION = 20260420"
-    source_where_clause: "p1.DATE_PARTITION = 20260420"
+    my_where_clause:     ""
+    source_where_clause: ""
     my_group_by: []
     source_group_by: []
 $$);
 
--- Opsi alternatif: hilangkan where_clause dan tambahkan DATE_PARTITION di
--- my_group_by + source_group_by untuk breakdown per partisi.
+-- CATATAN POLICY (PENTING):
+--   Composite join `p1.DATE_PARTITION = c1.DATE_PARTITION` DITOLAK oleh
+--   standard template karena join_standard hanya menerima PII types
+--   (hashed_phone_sha256, email, dll). DATE_PARTITION = passthrough.
+--   Error: **FAILURE**: Unauthorized columns: p1.date_partition
+--
+-- Konsekuensi single-query tanpa partition filter:
+--   - Output raw = cartesian expansion (MSISDN × 8 partisi × 8 partisi = 44.8M rows)
+--   - Unique audience setelah DISTINCT = 3.37M tuples (identik dengan loop per-partisi)
+--   - Benchmark: 57 detik analysis + 79 detik activation di GEN2_XLARGE (5× lebih cepat dari loop)
+--
+-- Opsi alternatif kalau butuh semantic composite (1 row per MSISDN per minggu):
+--   (a) Per-partition loop — 8 RUN calls, masing-masing dengan filter:
+--       my_where_clause:     "c1.DATE_PARTITION = 20260420"
+--       source_where_clause: "p1.DATE_PARTITION = 20260420"
+--   (b) Breakdown per partisi dalam 1 query (tetap cartesian tapi dikelompokkan):
+--       my_group_by: ["c1.DATE_PARTITION"]
+--       source_group_by: ["p1.DATE_PARTITION"]
 
 -- =========================================================================
--- STEP 9  ·  RUN ACTIVATION -> export matched records
+-- STEP 9  ·  RUN ACTIVATION -> export matched records (FULL COLUMNS + FULL-SCAN)
 -- -------------------------------------------------------------------------
 -- Hasil di-landing di schema share: SFDCR_TELCO_AUDIENCE_OVERLAP.ACTIVATION.
 -- Tabel: SEGMENT_RECORDS  (kolom RECORDS berisi VARIANT dengan ID object).
+--
+-- USE CASE: kita butuh SELURUH 1000 kolom provider + seluruh kolom consumer
+-- (~1007 keys per record) di-export untuk downstream ML / scoring / feature store.
+--
+-- GOTCHA: Spec YAML dengan 1000+ `activation_column` entries > 256 byte limit
+-- session variable, jadi TIDAK BISA di-build via `SET X = (SELECT LISTAGG...)`.
+--
+-- SOLUSI: Snowflake Scripting anonymous block. Local `STRING` variable tidak
+-- punya 256-byte limit, dan spec bisa di-bind sebagai argument ke CALL.
+--
+-- Discover dulu berapa kolom provider yang eligible untuk activation:
+SELECT COUNT(DISTINCT COLUMN_NAME) AS PROVIDER_ACTIVATION_COLS
+FROM SFDCR_TELCO_AUDIENCE_OVERLAP.CLEANROOM.POLICY_COLUMNS_V
+WHERE ANALYSIS_NAME = 'standard_audience_overlap_activation_v0'
+  AND TABLE_NAME LIKE '%C360_TELCO%';
+-- Expected: 1000
+
 -- =========================================================================
-CALL SAMOOHA_BY_SNOWFLAKE_LOCAL_DB.COLLABORATION.RUN('telco_audience_overlap', $$
-api_version: "2.0.0"
+-- RUN ACTIVATION — 1007 kolom, 1 query single-call, dynamic spec via LISTAGG
+-- =========================================================================
+USE WAREHOUSE GEN2_XLARGE;  -- atau GEN2_2XLARGE untuk lebih cepat
+ALTER WAREHOUSE GEN2_XLARGE RESUME IF SUSPENDED;
+
+DECLARE
+  consumer_lines STRING;
+  provider_lines STRING;
+  spec           STRING;
+  result         VARIANT;
+  t0             TIMESTAMP_LTZ;
+  t1             TIMESTAMP_LTZ;
+BEGIN
+  -- Build consumer activation lines (exclude join key)
+  SELECT LISTAGG('      - "c1.' || COLUMN_NAME || '"', '\n')
+         WITHIN GROUP (ORDER BY ORDINAL_POSITION)
+  INTO :consumer_lines
+  FROM DCR_CONSUMER_1M.INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA='DATA' AND TABLE_NAME='MARKETING_AUDIENCE_DCR_DEMO'
+    AND COLUMN_NAME NOT IN ('HASHED_MSISDN');
+
+  -- Build provider activation lines from shared policy view
+  SELECT LISTAGG('      - "p1.' || COLUMN_NAME || '"', '\n')
+         WITHIN GROUP (ORDER BY COLUMN_NAME)
+  INTO :provider_lines
+  FROM (
+    SELECT DISTINCT COLUMN_NAME
+    FROM SFDCR_TELCO_AUDIENCE_OVERLAP.CLEANROOM.POLICY_COLUMNS_V
+    WHERE ANALYSIS_NAME='standard_audience_overlap_activation_v0'
+      AND TABLE_NAME LIKE '%C360_TELCO%'
+      AND COLUMN_NAME NOT IN ('HASHED_MSISDN','HASHED_PHONE_SHA256')
+  );
+
+  spec := 'api_version: "2.0.0"
 spec_type: "analysis"
-name: "activate_overlap_segment"
-description: Export matched audiens (partisi terbaru) ke akun consumer untuk campaign targeting.
+name: "activate_overlap_fullcolumns"
+description: Export matched audiens dengan SEMUA 1000 kolom provider + consumer.
 template: "standard_audience_overlap_activation_v0"
 
 template_configuration:
@@ -198,18 +269,30 @@ template_configuration:
     join_clauses:
       - "p1.HASHED_PHONE_SHA256 = c1.HASHED_PHONE_SHA256"
     activation_column:
-      - "c1.CUSTOMER_TIER"
-      - "c1.SEGMENT"
-      - "c1.PROPENSITY"
-      - "c1.LAST_CAMPAIGN"
-      - "c1.CHANNEL_PREF"
-      - "p1.DATE_PARTITION"
-    where_clause: "p1.DATE_PARTITION = 20260420 AND c1.DATE_PARTITION = 20260420"
+' || :consumer_lines || '
+' || :provider_lines || '
+    where_clause: ""
 
   activation:
     snowflake_collaborator: "CONSUMER"
-    segment_name: "telco_highvalue_overlap_v1"
-$$);
+    segment_name: "telco_highvalue_fullcolumns"
+';
+
+  t0 := CURRENT_TIMESTAMP();
+  CALL SAMOOHA_BY_SNOWFLAKE_LOCAL_DB.COLLABORATION.RUN('telco_audience_overlap', :spec) INTO :result;
+  t1 := CURRENT_TIMESTAMP();
+
+  RETURN OBJECT_CONSTRUCT(
+    'spec_size_bytes', LENGTH(:spec),
+    'elapsed_seconds', DATEDIFF('MILLISECOND', :t0, :t1) / 1000.0,
+    'result',          :result
+  );
+END;
+
+-- Benchmark hasil (dieksekusi di SFSEAPAC.ALVIN_JKT):
+--   GEN2_XLARGE (16 cr/hr):  ~303 s wall = ~1.35 credits
+--   GEN2_2XLARGE (32 cr/hr): lihat benchmark_results.md section "FULL-COLUMNS Activation 2XL"
+-- =========================================================================
 
 -- =========================================================================
 -- STEP 10  ·  Query hasil activation
@@ -223,29 +306,49 @@ FROM   SFDCR_TELCO_AUDIENCE_OVERLAP.ACTIVATION.SEGMENT_RECORDS;
 SELECT TO_JSON(RECORDS) FROM SFDCR_TELCO_AUDIENCE_OVERLAP.ACTIVATION.SEGMENT_RECORDS LIMIT 3;
 
 -- =========================================================================
--- STEP 11  ·  Materialize flat table di akun consumer (permanen)
+-- STEP 11  ·  Materialize flat table di akun consumer (+ DEDUPLIKASI)
 -- -------------------------------------------------------------------------
--- Parse VARIANT -> kolom terstruktur, cluster by DATE_PARTITION.
+-- Untuk 1000+ kolom, materialization juga harus dibuild dinamis.
+-- Dua pendekatan:
+--   (a) Flat dinamis via Python - loop kolom + generate CREATE TABLE AS SELECT.
+--       Script: ./helpers/materialize_activation_full_columns.py
+--   (b) Simpan sebagai VARIANT dan parse on-demand di downstream query.
+--
+-- Contoh pendekatan (b) - simpan VARIANT utuh + 1 filter segment_name:
 -- =========================================================================
-CREATE OR REPLACE TABLE DCR_CONSUMER_1M.DATA.ACTIVATION_TELCO_HIGHVALUE
-CLUSTER BY (DATE_PARTITION) AS
-SELECT
-    RECORDS:ID:"p1.DATE_PARTITION"::NUMBER(8,0)  AS DATE_PARTITION,
-    RECORDS:ID:"c1.CUSTOMER_TIER"::STRING        AS CUSTOMER_TIER,
-    RECORDS:ID:"c1.SEGMENT"::STRING              AS SEGMENT,
-    RECORDS:ID:"c1.PROPENSITY"::FLOAT            AS PROPENSITY,
-    RECORDS:ID:"c1.LAST_CAMPAIGN"::STRING        AS LAST_CAMPAIGN,
-    RECORDS:ID:"c1.CHANNEL_PREF"::STRING         AS CHANNEL_PREF,
-    RECORDS:ID:"join_clause"::STRING             AS MATCH_CRITERIA,
+CREATE OR REPLACE TABLE DCR_CONSUMER_1M.DATA.ACTIVATION_TELCO_FULLCOLUMNS_RAW
+AS
+SELECT DISTINCT
+    RECORDS,
     BATCH_ID,
     SEGMENT_NAME,
     UPDATED_ON
-FROM SFDCR_TELCO_AUDIENCE_OVERLAP.ACTIVATION.SEGMENT_RECORDS;
+FROM SFDCR_TELCO_AUDIENCE_OVERLAP.ACTIVATION.SEGMENT_RECORDS
+WHERE SEGMENT_NAME = 'telco_highvalue_fullcolumns';
 
-SELECT COUNT(*) AS TOTAL_ACTIVATED,
-       COUNT(DISTINCT DATE_PARTITION) AS PARTITIONS
-FROM DCR_CONSUMER_1M.DATA.ACTIVATION_TELCO_HIGHVALUE;
--- Expected: 700,000 rows, 1 partition (20260420)
+SELECT COUNT(*) AS TOTAL_UNIQUE_RECORDS FROM DCR_CONSUMER_1M.DATA.ACTIVATION_TELCO_FULLCOLUMNS_RAW;
+
+-- Inspect struktur VARIANT (akan ada ~1005 keys):
+SELECT ARRAY_SIZE(OBJECT_KEYS(RECORDS:ID)) AS COLUMN_COUNT_PER_RECORD
+FROM   DCR_CONSUMER_1M.DATA.ACTIVATION_TELCO_FULLCOLUMNS_RAW LIMIT 1;
+
+-- Preview beberapa kolom (tambahkan sesuai kebutuhan downstream):
+SELECT
+    RECORDS:ID:"p1.DATE_PARTITION"::NUMBER(8,0) AS DATE_PARTITION,
+    RECORDS:ID:"c1.CUSTOMER_TIER"::STRING       AS CUSTOMER_TIER,
+    RECORDS:ID:"c1.SEGMENT"::STRING             AS SEGMENT,
+    RECORDS:ID:"p1.AGE"::NUMBER                 AS AGE,
+    RECORDS:ID:"p1.GENDER"::STRING              AS GENDER,
+    RECORDS:ID:"p1.CHURN_SCORE"::FLOAT          AS CHURN_SCORE,
+    RECORDS:ID:"p1.CLV_SCORE"::FLOAT            AS CLV_SCORE,
+    RECORDS:ID:"p1.IS_HIGH_VALUE"::BOOLEAN      AS IS_HIGH_VALUE
+FROM DCR_CONSUMER_1M.DATA.ACTIVATION_TELCO_FULLCOLUMNS_RAW
+LIMIT 10;
+
+-- Kalau butuh FLAT TABLE 1005 kolom (storage lebih besar, query lebih cepat):
+--   Jalankan: SNOWFLAKE_CONNECTION_NAME=alvin-putra-aws-jkt \
+--              /tmp/sfenv/bin/python ./helpers/materialize_activation_full_columns.py
+-- Script akan auto-generate CREATE OR REPLACE TABLE AS SELECT dengan 1005 cast.
 
 -- Preview:
 SELECT DATE_PARTITION, CUSTOMER_TIER, SEGMENT, PROPENSITY, LAST_CAMPAIGN, CHANNEL_PREF

@@ -1,0 +1,217 @@
+{
+  "warehouse": "GEN2_XLARGE",
+  "total_provider_rows_scanned": "1,200,000,000",
+  "total_consumer_rows_scanned": "8,000,000",
+  "analysis_loop_seconds": 208.817,
+  "activation_loop_seconds": 470.611,
+  "steps": [
+    {
+      "step": "C0: USE WAREHOUSE GEN2_XLARGE",
+      "wall_seconds": 0.421,
+      "server_ms": 36,
+      "query_id": "01c3f790-0001-6b73-0000-31d506051942",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:32:48.496066+00:00"
+    },
+    {
+      "step": "C0: ALTER WAREHOUSE RESUME",
+      "wall_seconds": 0.407,
+      "server_ms": 31,
+      "query_id": "01c3f790-0001-6b73-0000-31d506051946",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:32:49.766317+00:00"
+    },
+    {
+      "step": "ATTEMPT 1: Composite join in join_clauses (full 1.2B x 8M)",
+      "wall_seconds": 18.841,
+      "server_ms": 18400,
+      "query_id": "01c3f790-0001-6b54-0000-31d50605553a",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:33:09.774679+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260302",
+      "wall_seconds": 25.74,
+      "server_ms": 25337,
+      "query_id": "01c3f791-0001-6b54-0000-31d50605561a",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:33:36.280870+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260309",
+      "wall_seconds": 28.417,
+      "server_ms": 27647,
+      "query_id": "01c3f791-0001-6b73-0000-31d506051966",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:34:06.034640+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260316",
+      "wall_seconds": 24.764,
+      "server_ms": 24379,
+      "query_id": "01c3f792-0001-6b54-0000-31d506055732",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:34:31.536240+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260323",
+      "wall_seconds": 25.391,
+      "server_ms": 24994,
+      "query_id": "01c3f792-0001-6b73-0000-31d506051a82",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:34:57.738319+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260330",
+      "wall_seconds": 26.708,
+      "server_ms": 26301,
+      "query_id": "01c3f792-0001-6b73-0000-31d506051b86",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:35:25.301728+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260406",
+      "wall_seconds": 24.647,
+      "server_ms": 24252,
+      "query_id": "01c3f793-0001-6b73-0000-31d506051c96",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:35:50.722230+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260413",
+      "wall_seconds": 27.041,
+      "server_ms": 25506,
+      "query_id": "01c3f793-0001-6b73-0000-31d506051d9a",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:36:18.518737+00:00"
+    },
+    {
+      "step": "ANALYSIS partition 20260420",
+      "wall_seconds": 19.209,
+      "server_ms": 18824,
+      "query_id": "01c3f794-0001-6b54-0000-31d50605588a",
+      "rowcount": 3,
+      "error": null,
+      "timestamp": "2026-04-26T12:36:38.578739+00:00"
+    },
+    {
+      "step": "SUMMARY: Total 8-partition analysis loop",
+      "wall_seconds": 208.817,
+      "timestamp": "2026-04-26T12:36:38.578846+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260302",
+      "wall_seconds": 50.704,
+      "server_ms": 50324,
+      "query_id": "01c3f794-0001-6b54-0000-31d50605598a",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:37:30.150124+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260309",
+      "wall_seconds": 52.53,
+      "server_ms": 52134,
+      "query_id": "01c3f795-0001-6b73-0000-31d506051ece",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:38:23.555721+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260316",
+      "wall_seconds": 53.25,
+      "server_ms": 52754,
+      "query_id": "01c3f796-0001-6b54-0000-31d506055b12",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:39:18.876034+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260323",
+      "wall_seconds": 64.984,
+      "server_ms": 64582,
+      "query_id": "01c3f797-0001-6b54-0000-31d506055c8a",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:40:24.787192+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260330",
+      "wall_seconds": 70.349,
+      "server_ms": 69965,
+      "query_id": "01c3f798-0001-6b54-0000-31d506055e0e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:41:36.205548+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260406",
+      "wall_seconds": 59.653,
+      "server_ms": 59256,
+      "query_id": "01c3f799-0001-6b54-0000-31d506055f96",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:42:37.823211+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260413",
+      "wall_seconds": 53.445,
+      "server_ms": 53023,
+      "query_id": "01c3f79a-0001-6b54-0000-31d5060580f2",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:43:32.104592+00:00"
+    },
+    {
+      "step": "ACTIVATION partition 20260420",
+      "wall_seconds": 56.093,
+      "server_ms": 55658,
+      "query_id": "01c3f79b-0001-6b73-0000-31d50605706e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:44:29.190002+00:00"
+    },
+    {
+      "step": "SUMMARY: Total 8-partition activation loop",
+      "wall_seconds": 470.611,
+      "timestamp": "2026-04-26T12:44:29.190205+00:00"
+    },
+    {
+      "step": "COUNT total activation rows (all 8 batches)",
+      "wall_seconds": 0.519,
+      "server_ms": 140,
+      "query_id": "01c3f79c-0001-6b73-0000-31d5060571ce",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:44:30.569068+00:00"
+    },
+    {
+      "step": "MATERIALIZE all 8 batches flat table",
+      "wall_seconds": 1.891,
+      "server_ms": 1496,
+      "query_id": "01c3f79c-0001-6b54-0000-31d506058262",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T12:44:33.319731+00:00"
+    },
+    {
+      "step": "COUNT materialized all 8 partitions",
+      "wall_seconds": 0.567,
+      "server_ms": 186,
+      "query_id": "01c3f79c-0001-6b54-0000-31d50605826a",
+      "rowcount": 8,
+      "error": null,
+      "timestamp": "2026-04-26T12:44:34.706323+00:00"
+    }
+  ]
+}

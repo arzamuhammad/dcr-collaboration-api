@@ -1,0 +1,170 @@
+{
+  "benchmark_date": "2026-04-26T10:47:15.429048Z",
+  "warehouse": "GEN2_MEDIUM",
+  "warehouse_size": "MEDIUM",
+  "provider_account": "SFSEAPAC.ARDIYANMUHAMMAD",
+  "consumer_account": "SFSEAPAC.ALVIN_JKT",
+  "collaboration_name": "telco_audience_overlap_bench",
+  "data_offering_id": "telco_c360_offering_bench_v1_0",
+  "total_columns": 1001,
+  "offering_spec_bytes": 69539,
+  "total_wall_seconds": 691.948,
+  "steps": [
+    {
+      "step": "STEP 0a: USE WAREHOUSE GEN2_MEDIUM",
+      "wall_seconds": 0.41,
+      "server_ms": 31,
+      "query_id": "01c3f71b-0001-6b73-0000-04dd09734156",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:33.780100Z"
+    },
+    {
+      "step": "STEP 0b: ALTER WAREHOUSE RESUME (warm start)",
+      "wall_seconds": 0.403,
+      "server_ms": 27,
+      "query_id": "01c3f71b-0001-6b54-0000-04dd0973179e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:34.981407Z"
+    },
+    {
+      "step": "STEP 0c: warmup SELECT 1",
+      "wall_seconds": 0.402,
+      "server_ms": 19,
+      "query_id": "01c3f71b-0001-6b73-0000-04dd0973415e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:36.007565Z"
+    },
+    {
+      "step": "STEP 1a: GRANT ROLE SAMOOHA_APP_ROLE TO USER",
+      "wall_seconds": 0.402,
+      "server_ms": 29,
+      "query_id": "01c3f71b-0001-6b54-0000-04dd097317a2",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:37.020467Z"
+    },
+    {
+      "step": "STEP 1b: GRANT USAGE ON DATABASE",
+      "wall_seconds": 0.423,
+      "server_ms": 30,
+      "query_id": "01c3f71b-0001-6b73-0000-04dd09734166",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:38.035175Z"
+    },
+    {
+      "step": "STEP 1c: GRANT USAGE ON SCHEMA",
+      "wall_seconds": 0.402,
+      "server_ms": 25,
+      "query_id": "01c3f71b-0001-6b73-0000-04dd0973416a",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:39.028705Z"
+    },
+    {
+      "step": "STEP 1d: GRANT SELECT ON ALL TABLES",
+      "wall_seconds": 0.421,
+      "server_ms": 43,
+      "query_id": "01c3f71b-0001-6b54-0000-04dd097317b6",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:40.037541Z"
+    },
+    {
+      "step": "STEP 2: REGISTER_STANDARD_DCR_TEMPLATES",
+      "wall_seconds": 7.096,
+      "server_ms": 6691,
+      "query_id": "01c3f71b-0001-6b54-0000-04dd097317be",
+      "rowcount": 2,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:47.789256Z"
+    },
+    {
+      "step": "STEP 3a: fetch column list for spec",
+      "wall_seconds": 1.422,
+      "server_ms": 994,
+      "query_id": "01c3f71b-0001-6b54-0000-04dd09731806",
+      "rowcount": null,
+      "error": null,
+      "timestamp": "2026-04-26T10:35:49.833093Z"
+    },
+    {
+      "step": "STEP 3b: REGISTER_DATA_OFFERING (1001 cols, 69KB YAML)",
+      "wall_seconds": 13.587,
+      "server_ms": 13178,
+      "query_id": "01c3f71b-0001-6b73-0000-04dd09734176",
+      "rowcount": null,
+      "error": null,
+      "timestamp": "2026-04-26T10:36:05.495678Z"
+    },
+    {
+      "step": "STEP 3c: VIEW_REGISTERED_DATA_OFFERINGS",
+      "wall_seconds": 11.262,
+      "server_ms": 6847,
+      "query_id": "01c3f71c-0001-6b73-0000-04dd097341da",
+      "rowcount": 2,
+      "error": null,
+      "timestamp": "2026-04-26T10:36:17.423950Z"
+    },
+    {
+      "step": "STEP 4: INITIALIZE collaboration (returns immediately, creates async)",
+      "wall_seconds": 29.999,
+      "server_ms": 29600,
+      "query_id": "01c3f71c-0001-6b73-0000-04dd097341fe",
+      "rowcount": null,
+      "error": null,
+      "timestamp": "2026-04-26T10:36:48.117077Z"
+    },
+    {
+      "step": "STEP 5: owner auto-join (poll GET_STATUS until PROVIDER=JOINED)",
+      "wall_seconds": 609.08,
+      "server_ms": null,
+      "query_id": null,
+      "rowcount": null,
+      "error": "timeout/unexpected",
+      "final_statuses": {
+        "SFSEAPAC.ARDIYANMUHAMMAD": "INSTALLING"
+      },
+      "timestamp": "2026-04-26T10:46:57.163028Z"
+    },
+    {
+      "step": "STEP 6a: VIEW_COLLABORATIONS",
+      "wall_seconds": 4.662,
+      "server_ms": 4286,
+      "query_id": "01c3f726-0001-6b73-0000-04dd09734ba6",
+      "rowcount": 2,
+      "error": null,
+      "timestamp": "2026-04-26T10:47:02.493571Z"
+    },
+    {
+      "step": "STEP 6b: VIEW_DATA_OFFERINGS on collab",
+      "wall_seconds": 3.672,
+      "server_ms": null,
+      "query_id": null,
+      "rowcount": null,
+      "error": "100357 (P0000): Python Interpreter Error:\nTraceback (most recent call last):\n  File \"_udf_code.py\", line 25, in main\n    raise e.with_traceback(None) from None\nnavlib.app.collaboration.exceptions.CollaborationNotFoundException: Collaboration 'telco_audience_overlap_bench' does not exist or not authorized.\n in function VIEW_DATA_OFFERINGS with handler main",
+      "timestamp": "2026-04-26T10:47:06.165561Z"
+    },
+    {
+      "step": "STEP 6c: VIEW_TEMPLATES on collab",
+      "wall_seconds": 3.711,
+      "server_ms": null,
+      "query_id": null,
+      "rowcount": null,
+      "error": "100357 (P0000): Python Interpreter Error:\nTraceback (most recent call last):\n  File \"_udf_code.py\", line 22, in main\n    raise e.with_traceback(None) from None\nnavlib.app.collaboration.exceptions.CollaborationNotFoundException: Collaboration 'telco_audience_overlap_bench' does not exist or not authorized.\n in function VIEW_TEMPLATES with handler main",
+      "timestamp": "2026-04-26T10:47:09.876815Z"
+    },
+    {
+      "step": "STEP 6d: GET_STATUS final",
+      "wall_seconds": 4.594,
+      "server_ms": 4191,
+      "query_id": "01c3f727-0001-6b54-0000-04dd09735a6a",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-26T10:47:15.428489Z"
+    }
+  ]
+}

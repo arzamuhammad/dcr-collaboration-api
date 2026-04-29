@@ -1,0 +1,54 @@
+{
+  "benchmark_date": "2026-04-27T02:46:27.110746+00:00",
+  "warehouse": "GEN2_XLARGE",
+  "mode": "SINGLE-QUERY with COMPOSITE KEY (no partition loop)",
+  "analysis_seconds": 18.455,
+  "activation_seconds": 15.249,
+  "steps": [
+    {
+      "step": "S0: USE WAREHOUSE GEN2_XLARGE",
+      "wall_seconds": 0.452,
+      "server_ms": 41,
+      "query_id": "01c3fae5-0001-6b92-0000-31d506064622",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:45:48.271294+00:00"
+    },
+    {
+      "step": "S0: ALTER WAREHOUSE RESUME",
+      "wall_seconds": 0.424,
+      "server_ms": 25,
+      "query_id": "01c3fae5-0001-6b73-0000-31d50606770e",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:45:49.344232+00:00"
+    },
+    {
+      "step": "SINGLE-QUERY COMPOSITE ANALYSIS (1.2B x 8M, composite key in join_clauses)",
+      "wall_seconds": 18.455,
+      "server_ms": 18012,
+      "query_id": "01c3fae5-0001-6b92-0000-31d506064626",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:46:08.604521+00:00"
+    },
+    {
+      "step": "SINGLE-QUERY COMPOSITE ACTIVATION (1.2B x 8M composite -> 5.6M export)",
+      "wall_seconds": 15.249,
+      "server_ms": null,
+      "query_id": null,
+      "rowcount": null,
+      "error": "100357 (P0000): Python Interpreter Error:\nTraceback (most recent call last):\n  File \"_udf_code.py\", line 25, in main\n    raise e.with_traceback(None) from None\nnavlib.app.collaboration.exceptions.AnalysisFailedException: Analysis failed: Unauthorized columns: p1.date_partition\n in function RUN with handler main",
+      "timestamp": "2026-04-27T02:46:23.853738+00:00"
+    },
+    {
+      "step": "COUNT composite single-query activation records",
+      "wall_seconds": 0.63,
+      "server_ms": 210,
+      "query_id": "01c3fae6-0001-6b73-0000-31d506067806",
+      "rowcount": 1,
+      "error": null,
+      "timestamp": "2026-04-27T02:46:27.110636+00:00"
+    }
+  ]
+}
