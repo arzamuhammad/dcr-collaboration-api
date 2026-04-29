@@ -487,3 +487,69 @@ Lengkap di `04_consumer_notebook/consumer_workflow.sql` STEP 9.
 **Recommendation untuk production**:
 - **6-col activation + downstream enrichment** jauh lebih optimal untuk kebanyakan use case → **0.35 credits vs 22 credits (63× hemat)**, tinggal join activation result dengan shared view di-sisi consumer untuk ambil kolom tambahan kalau diperlukan.
 - **Full-columns activation (1007 cols)** hanya dipilih kalau: (a) butuh snapshot C360 lengkap sekaligus, (b) downstream tidak bisa re-query shared view (air-gapped use case), (c) budget compute tersedia.
+
+---
+
+# DCR 1-Partition Benchmark — Analysis + Activation 1007 cols (150M × 1M)
+
+**Benchmark Date**: 2026-04-29 (UTC 00:04–01:16)
+**Warehouse**: `GEN2_XLARGE` (X-Large, Gen2, 16 credits/hour)
+**Mode**: Single-partition filter (`DATE_PARTITION = 20260420`), 1007 activation columns
+**Data Volume**:
+- Provider rows scanned: **150,000,000** (1 partition of C360_TELCO)
+- Consumer rows scanned: **1,000,000** (1 partition of MARKETING_AUDIENCE)
+- Expected overlap: **700,000** matched records
+
+## Analysis — 1 Partition
+
+| Metrik | Value |
+|---|---:|
+| Outer CALL RUN wall-clock | **38.7 s** |
+| `secure_run_v2` | 28.4 s |
+| Output | 3 rows (700k overlap, 300k non-overlap, 1M total) |
+| **Credits** | **0.17** |
+| **$ @ std $3.90/cr** | **$0.67** |
+
+## Activation 1007 cols — 1 Partition
+
+| Sub-step | Wall Time | % |
+|---|---:|---:|
+| **`secure_run_v2`** (join + build VARIANT 1007 cols) | **4,214.6 s (70 min 15 s)** | **99.3%** |
+| `direct_activation_to_runner` | 12.3 s | 0.3% |
+| `INSERT INTO SEGMENT_RECORDS` | 5.7 s | 0.1% |
+| **TOTAL Activation** | **~4,245 s (70 min 45 s)** | 100% |
+| **Rows exported** | **700,000** × 1,007 cols |
+| **Credits** | **18.87** |
+| **$ @ std $3.90/cr** | **$73.6** |
+
+## Total: Analysis + Activation 1007 cols (1 Partition)
+
+| Phase | Wall Time | Credits | $ (std) |
+|---|---:|---:|---:|
+| Analysis | 38.7 s | 0.17 | $0.67 |
+| Activation (1007 cols) | 4,245 s (70 min) | 18.87 | $73.6 |
+| **TOTAL** | **4,283 s (71 min 23 s)** | **19.04** | **$74.3** |
+
+## Perbandingan: 1 Partition vs All 8 Partitions (1007 cols, GEN2_XLARGE)
+
+| Mode | Rows Exported | Duration | Credits | $/run |
+|---|---:|---:|---:|---:|
+| **1 partition** (150M × 1M → 700k rows) | 700,000 | **71 min** | **19.04** | $74.3 |
+| **All 8 partitions** (1.2B × 8M → 44.8M rows) | 44,800,000 | **84 min** | **22.4** | $87.4 |
+| Ratio (8-part / 1-part) | 64× rows | 1.18× duration | 1.18× cost | — |
+
+### Insight: 64× rows tapi hanya 1.18× lebih lama
+
+`secure_run_v2` spend waktu BUKAN pada volume data, tapi pada **kolom count / VARIANT serialization overhead**. 700k rows vs 44.8M rows hanya beda ~13 menit (~18% slower) — karena bottleneck utama adalah membangun VARIANT payload 1007-key untuk setiap record, yang overhead-nya konstan per-record tapi dominated by native-app framework latency.
+
+## Master Benchmark Matrix — Semua Konfigurasi
+
+| # | Scope | Cols | WH | Rows Exported | Wall Time | Credits | $/run |
+|---|---|---:|---|---:|---:|---:|---:|
+| 1 | 1 partition, analysis only | 6 | XL | 3 (agg) | **39 s** | **0.17** | $0.67 |
+| 2 | 8 partitions, analysis only | 6 | XL | 3 (agg) | **57 s** | **0.25** | $0.99 |
+| 3 | 1 partition, activation | 6 | XL | 700k | **79 s** | **0.35** | $1.37 |
+| 4 | 8 partitions, activation | 6 | XL | 44.8M | **79 s** | **0.35** | $1.37 |
+| 5 | **1 partition, activation** | **1007** | **XL** | **700k** | **71 min** | **19.04** | **$74.3** |
+| 6 | 8 partitions, activation | 1007 | XL | 44.8M | 83 min | 22.2 | $86.6 |
+| 7 | 8 partitions, activation | 1007 | 2XL | 44.8M | 45 min | 23.8 | $93.0 |
