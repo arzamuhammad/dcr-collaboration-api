@@ -553,3 +553,74 @@ Lengkap di `04_consumer_notebook/consumer_workflow.sql` STEP 9.
 | 5 | **1 partition, activation** | **1007** | **XL** | **700k** | **71 min** | **19.04** | **$74.3** |
 | 6 | 8 partitions, activation | 1007 | XL | 44.8M | 83 min | 22.2 | $86.6 |
 | 7 | 8 partitions, activation | 1007 | 2XL | 44.8M | 45 min | 23.8 | $93.0 |
+| 8 | **1 partition, activation** | **1007** | **2XL** | **700k** | **38 min** | **20.35** | **$79.4** |
+
+---
+
+# DCR 1-Partition Benchmark on GEN2_2XLARGE — 1007 cols
+
+**Benchmark Date**: 2026-04-29 (UTC 02:07–02:46)
+**Warehouse**: `GEN2_2XLARGE` (2X-Large, Gen2, 32 credits/hour)
+**Mode**: Single-partition filter (`DATE_PARTITION = 20260420`), 1007 activation columns
+**Data Volume**:
+- Provider rows scanned: **150,000,000** (1 partition of C360_TELCO)
+- Consumer rows scanned: **1,000,000** (1 partition of MARKETING_AUDIENCE)
+- Expected overlap: **700,000** matched records
+
+## Analysis 1 Partition @ 2XL
+
+| Metrik | Value |
+|---|---:|
+| Outer CALL RUN wall-clock | **28.2 s** |
+| `secure_run_v2` | 20.0 s |
+| Output | 3 rows (700k overlap, 300k non-overlap, 1M total) |
+| **Credits** | **0.25** |
+| **$ @ std $3.90/cr** | **$0.98** |
+
+## Activation 1007 cols, 1 Partition @ 2XL
+
+| Sub-step | Wall Time | % |
+|---|---:|---:|
+| **`secure_run_v2`** (join + build VARIANT 1007 cols) | **2,234.96 s (37 min 15 s)** | **98.9%** |
+| `direct_activation_to_runner` | 10.40 s | 0.5% |
+| `INSERT INTO SEGMENT_RECORDS` | 5.33 s | 0.2% |
+| **TOTAL Activation** | **~2,261 s (37 min 41 s)** | 100% |
+| **Rows exported** | **700,000** × 1,007 cols | — |
+| **Credits** | **20.10** | — |
+| **$ @ std $3.90/cr** | **$78.4** | — |
+
+## Total: Analysis + Activation 1007 cols, 1 Partition @ 2XL
+
+| Phase | Wall Time | Credits | $ (std) |
+|---|---:|---:|---:|
+| Analysis | 28.2 s | 0.25 | $0.98 |
+| Activation (1007 cols) | 2,261 s (38 min) | 20.10 | $78.4 |
+| **TOTAL** | **2,289 s (38 min 9 s)** | **20.35** | **$79.4** |
+
+## Perbandingan: XL vs 2XL (1-partition, 1007 cols)
+
+| Mode | Analysis | Activation 1007 cols | **TOTAL** | Credits | $ |
+|---|---:|---:|---:|---:|---:|
+| **GEN2_XLARGE** (16 cr/hr) | 38.7 s | 4,245 s (71 min) | **4,283 s (71 min 23 s)** | **19.04** | $74.3 |
+| **GEN2_2XLARGE** (32 cr/hr) | 28.2 s | 2,261 s (38 min) | **2,289 s (38 min 9 s)** | **20.35** | $79.4 |
+| **Ratio** | 1.37× faster | **1.88× faster** | **1.87× faster** | +6.9% credits | +6.9% $ |
+
+## Sub-Step Breakdown: XL vs 2XL (Activation 1007 cols, 1 Partition)
+
+| Sub-step | XL | 2XL | Speedup |
+|---|---:|---:|---:|
+| secure_run_v2 | 4,214.6 s | 2,234.96 s | **1.89×** |
+| direct_activation_to_runner | 12.3 s | 10.40 s | 1.18× |
+| INSERT to SEGMENT_RECORDS | 5.7 s | 5.33 s | 1.07× |
+| **Total Activation** | **4,245 s (71 min)** | **2,261 s (38 min)** | **1.88×** |
+
+## Insights 1-Partition 2XL
+
+1. **2XL = Sweet spot untuk 1-partition 1007 cols** — 38 menit vs 71 menit di XL (saving ~33 menit) dengan cost premium cuma +6.9%. Kalau SLA < 1 jam, 2XL clear winner.
+2. **secure_run_v2 scale 1.89× dari XL → 2XL** — konsisten dengan all-partition benchmark. secure_run_v2 benefits from horizontal parallelism.
+3. **direct_activation_to_runner + INSERT hampir tidak scale** (1.18× & 1.07×) — karena memang I/O-bound + latency tetap konstan. Tapi porsi mereka kecil (0.7% total) jadi tidak matters.
+4. **1-partition vs 8-partition @ 2XL** (1007 cols): 38 min vs 45 min — nambah 7 partisi cuma nambah 7 menit. **Marginal cost add-partition sangat kecil di 2XL** (VARIANT framework overhead dominant).
+5. **Cost efficiency ranking (1007 cols)**:
+   - Best throughput: 2XL 8-partitions = 44.8M rows / 45 min = **995k rows/min**
+   - Best SLA @ single partition: 2XL 1-partition = **38 min** (vs 71 min XL)
+   - Best $/row: XL 8-partitions = **$86.6 / 44.8M = $0.0000019 per row**
